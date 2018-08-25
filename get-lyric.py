@@ -1,21 +1,14 @@
 import sys, dbus, requests
 from bs4 import BeautifulSoup
-from constants import (
-    TOKEN
+from genius_api_token import (
+    GENIUS_API_TOKEN
 )
 
-defaults = {
-    'request': {
-        'token': TOKEN,
-        'base_url': 'https://api.genius.com'
-    },
-    'message': {
-        'search_fail': 'The lyrics for this song were not found!',
-        'wrong_input': 'Wrong number of arguments.\n' \
-                       'Use two parameters to perform a custom search ' \
-                       'or none to get the song currently playing on Spotify.'
-    }
-}
+API_TOKEN = GENIUS_API_TOKEN
+BASE_URL = 'base_url': 'https://api.genius.com'
+SEARCH_FAIL_MSG = 'The lyrics for this song were not found!'
+WRONG_INPUT_MSG = 'Wrong number of arguments.\nUse two parameters to perform a
+custom search or none to get the song currently playing on Spotify.'
 
 def get_current_song_info():
     # kudos to jooon at stackoverflow http://stackoverflow.com/a/33923095
@@ -29,8 +22,8 @@ def get_current_song_info():
     return {'artist': metadata['xesam:artist'][0], 'title': metadata['xesam:title']}
 
 def request_song_info(song_title, artist_name):
-    base_url = defaults['request']['base_url']
-    headers = {'Authorization': 'Bearer ' + defaults['request']['token']}
+    base_url = request_defaults['base_url']
+    headers = {'Authorization': 'Bearer ' + request_defaults['token']}
     search_url = base_url + '/search'
     data = {'q': song_title + ' ' + artist_name}
     response = requests.get(search_url, data=data, headers=headers)
