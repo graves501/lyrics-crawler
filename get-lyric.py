@@ -1,31 +1,33 @@
-import sys, dbus, requests
+import sys
+import dbus
+import requests
 from bs4 import BeautifulSoup
+
 from genius_api_token import (
     GENIUS_API_TOKEN
 )
 
 API_TOKEN = GENIUS_API_TOKEN
-BASE_URL = 'base_url': 'https://api.genius.com'
+BASE_URL = 'https://api.genius.com'
 SEARCH_FAIL_MSG = 'The lyrics for this song were not found!'
-WRONG_INPUT_MSG = 'Wrong number of arguments.\nUse two parameters to perform a
-custom search or none to get the song currently playing on Spotify.'
+WRONG_INPUT_MSG = 'Wrong number of arguments. Use two parameters to perform a custom search or none to get the song currently playing on Spotify.'
 
-def get_current_song_info():
-    # kudos to jooon at stackoverflow http://stackoverflow.com/a/33923095
-    session_bus = dbus.SessionBus()
-    spotify_bus = session_bus.get_object('org.mpris.MediaPlayer2.spotify',
-                                         '/org/mpris/MediaPlayer2')
-    spotify_properties = dbus.Interface(spotify_bus,
-                                        'org.freedesktop.DBus.Properties')
-    metadata = spotify_properties.Get('org.mpris.MediaPlayer2.Player', 'Metadata')
-
-    return {'artist': metadata['xesam:artist'][0], 'title': metadata['xesam:title']}
 
 def request_song_info(song_title, artist_name):
-    base_url = request_defaults['base_url']
-    headers = {'Authorization': 'Bearer ' + request_defaults['token']}
-    search_url = base_url + '/search'
+    search_url = BASE_URL + '/search'
     data = {'q': song_title + ' ' + artist_name}
+    headers = {'Authorization': 'Bearer ' + API_TOKEN}
+
+    response = requests.get(search_url, data=data, headers=headers)
+
+    return response
+
+def request_songs_by_artist(artist_name):
+    #TODO retrieve artist id instead of using the general search
+    search_url = BASE_URL + '/search'
+    data = {'q': artist_name}
+    headers = {'Authorization': 'Bearer ' + API_TOKEN}
+
     response = requests.get(search_url, data=data, headers=headers)
 
     return response
@@ -38,29 +40,30 @@ def scrap_song_url(url):
 
     return lyrics
 
+
 def main():
     args_length = len(sys.argv)
-    if args_length == 1:
-        # Get info about song currently playing on Spotify
-        current_song_info = get_current_song_info()
-        song_title = current_song_info['title']
-        artist_name = current_song_info['artist']
+    if args_length == 2:
+        # TODO search for all lyrics of artist
+        song_info = sys.argv
+        artist_name = song_info[1]
+        print('Artist: {}'.format(artist_name))
     elif args_length == 3:
         # Use input as song title and artist name
+        # TODO validation
         song_info = sys.argv
         song_title, artist_name = song_info[1], song_info[2]
+        print('Song {} by Artist: {}'.format(song_title, artist_name))
     else:
-        print(defaults['message']['wrong_input'])
+        print(WRONG_INPUT_MSG)
         return
-
-    print('{} by {}'.format(song_title, artist_name))
 
     # Search for matches in request response
     response = request_song_info(song_title, artist_name)
-    json = response.json()
+    response_json = response.json()
     remote_song_info = None
 
-    for hit in json['response']['hits']:
+    for hit in response_json['response']['hits']:
         if artist_name.lower() in hit['result']['primary_artist']['name'].lower():
             remote_song_info = hit
             break
@@ -74,13 +77,15 @@ def main():
 
         print(lyrics)
     else:
-        print(defaults['message']['search_fail'])
+        print(SEARCH_FAIL_MSG)
 
-def write_lyrics_to_file (lyrics, song, artist):
-    f = open('lyric-view.txt', 'w')
-    f.write('{} by {}'.format(song, artist))
-    f.write(lyrics)
-    f.close()
+
+def write_lyrics_to_file(lyrics, song, artist):
+    file = open('lyric-view.txt', 'w')
+    file.write('{} by {}'.format(song, artist))
+    file.write(lyrics)
+    file.close()
+
 
 if __name__ == '__main__':
     main()
